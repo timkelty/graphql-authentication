@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.2.0 - 2020-11-26
+
+### Added
+
+- Added ability to disable user registration
+- Added per user group schema assignment, user group assignment, and granular schema permissions (a `register` mutation is added for each group, if enabled)
+- Added Google Sign-In support (adds a single `googleSignIn` mutation, or mutations per user group, depending on settings)
+- Added `SameSite` cookie policy control
+- Added unique, per user caching, to ensure users never see each other's cached queries
+- Added a `schema` field to the authentication mutation responses
+
+### Changed
+
+- Reworked the plugins settings into a tabbed interface
+- The `register` mutation now listens to the `requireEmailVerification` setting in user settings – creating users in a pending state, and sending an activation email
+- Tokens are now created using `microtime()` instead of `time()` to avoid any name conflicts
+
+### Fixed
+
+- Fixed some deprecation errors
+
+### Misc
+
+- Lots of under-the-hood tidying to make maintenance a lot easier
+
+## 1.1.8 - 2020-11-14
+
+### Fixed
+
+- Fixed issue with saving token expiry as 'never'
+
+## 1.1.7 - 2020-11-13
+
+### Fixed
+
+- Fixed issue with trailing commas in function calls causing an error on environments running PHP <7.3
+
 ## 1.1.6 - 2020-11-11
 
 ### Fixed

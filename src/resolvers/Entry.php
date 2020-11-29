@@ -30,7 +30,7 @@ class Entry extends ElementResolver
         // If this is the beginning of a resolver chain, start fresh
         if ($source === null) {
             $query = EntryElement::find();
-        // If not, get the prepared element query
+            // If not, get the prepared element query
         } else {
             $query = $source->$fieldName;
         }
@@ -41,14 +41,26 @@ class Entry extends ElementResolver
         }
 
         if (!GraphqlAuthentication::$plugin->isGraphiqlRequest()) {
-            $token = GraphqlAuthentication::$plugin->getHeaderToken();
+            $tokenService = GraphqlAuthentication::$plugin->getInstance()->token;
+            $token = $tokenService->getHeaderToken();
 
             if (StringHelper::contains($token, 'user-')) {
-                $arguments['authorId'] = GraphqlAuthentication::$plugin->getUserFromToken()->id;
+                $user = $tokenService->getUserFromToken();
+                $arguments['authorId'] = $user->id;
 
                 if (isset($arguments['section']) || isset($arguments['sectionId'])) {
                     unset($arguments['authorId']);
-                    $authorOnlySections = GraphqlAuthentication::$plugin->getSettings()->entryQueries ?? [];
+
+                    $settings = GraphqlAuthentication::$plugin->getSettings();
+                    $authorOnlySections = $settings->entryQueries ?? [];
+
+                    if ($settings->permissionType === 'multiple') {
+                        $userGroup = $user->getGroups()[0] ?? null;
+
+                        if ($userGroup) {
+                            $authorOnlySections = $settings->granularSchemas["group-{$userGroup->id}"]['entryQueries'] ?? [];
+                        }
+                    }
 
                     foreach ($authorOnlySections as $section => $value) {
                         if (!(bool) $value) {
@@ -63,7 +75,7 @@ class Entry extends ElementResolver
                             continue;
                         }
 
-                        $arguments['authorId'] = GraphqlAuthentication::$plugin->getUserFromToken()->id;
+                        $arguments['authorId'] = $user->id;
                     }
                 }
             }

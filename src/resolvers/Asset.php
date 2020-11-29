@@ -30,7 +30,7 @@ class Asset extends ElementResolver
         // If this is the beginning of a resolver chain, start fresh
         if ($source === null) {
             $query = AssetElement::find();
-        // If not, get the prepared element query
+            // If not, get the prepared element query
         } else {
             $query = $source->$fieldName;
         }
@@ -41,14 +41,26 @@ class Asset extends ElementResolver
         }
 
         if (!GraphqlAuthentication::$plugin->isGraphiqlRequest()) {
-            $token = GraphqlAuthentication::$plugin->getHeaderToken();
+            $tokenService = GraphqlAuthentication::$plugin->getInstance()->token;
+            $token = $tokenService->getHeaderToken();
 
             if (StringHelper::contains($token, 'user-')) {
-                $arguments['uploader'] = GraphqlAuthentication::$plugin->getUserFromToken()->id;
+                $user = $tokenService->getUserFromToken();
+                $arguments['uploader'] = $user->id;
 
                 if (isset($arguments['volume']) || isset($arguments['volumeId'])) {
                     unset($arguments['uploader']);
-                    $authorOnlyVolumes = GraphqlAuthentication::$plugin->getSettings()->assetQueries ?? [];
+
+                    $settings = GraphqlAuthentication::$plugin->getSettings();
+                    $authorOnlyVolumes = $settings->assetQueries ?? [];
+
+                    if ($settings->permissionType === 'multiple') {
+                        $userGroup = $user->getGroups()[0] ?? null;
+
+                        if ($userGroup) {
+                            $authorOnlyVolumes = $settings->granularSchemas["group-{$userGroup->id}"]['assetQueries'] ?? [];
+                        }
+                    }
 
                     foreach ($authorOnlyVolumes as $volume => $value) {
                         if (!(bool) $value) {
@@ -63,7 +75,7 @@ class Asset extends ElementResolver
                             continue;
                         }
 
-                        $arguments['uploader'] = GraphqlAuthentication::$plugin->getUserFromToken()->id;
+                        $arguments['uploader'] = $user->id;
                     }
                 }
             }
